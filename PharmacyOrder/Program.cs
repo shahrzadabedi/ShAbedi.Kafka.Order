@@ -23,8 +23,8 @@ builder.Services.AddMassTransit(x =>
     
     x.AddRider(rider =>
     {
-        const string kafkaBrokerServers = "localhost:19092,localhost:19093,localhost:19094";
-            //"localhost:19092";
+        var kafkaBrokerServers = builder.Configuration["KafkaConfig:KafkaBrokerServers"];
+
         rider.AddConsumer<OrderCreatedConsumer>();
         
         rider.UsingKafka((context, k) =>

@@ -21,32 +21,14 @@ builder.Services.AddControllers();
 
 builder.Services.AddMassTransit(x =>
 {
-    const string kafkaBrokerServers = "localhost:19092,localhost:19093,localhost:19094";
-        //"localhost:19092";
+    var kafkaBrokerServers = builder.Configuration["KafkaConfig:KafkaBrokerServers"];
+
     x.UsingInMemory((context, cfg) => cfg.ConfigureEndpoints(context));
     x.AddRider(rider =>
     {
         rider.AddProducer<string,OrderCreated>("order-created-topic");
 
         rider.UsingKafka((context, k) => { k.Host(kafkaBrokerServers); });
-
-        //x.UsingRabbitMq((ctx, cfg) =>
-        //{
-        //    cfg.Message<OrderCreated>(x => x.SetEntityName("order-created-exchange"));
-
-        //    cfg.Publish<OrderCreated>(x =>
-        //    {
-        //        x.ExchangeType = "topic";
-        //        x.AutoDelete = false;
-        //        x.Durable = true;
-        //    });
-
-        //    cfg.Host("localhost", "/", h =>
-        //    {
-        //        h.Username("guest");
-        //        h.Password("guest");
-        //    });
-        //});
     });
 });
 
