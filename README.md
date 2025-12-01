@@ -1,62 +1,60 @@
-﻿# ShAbedi.Order
-Order – Kafka Outbox Demo
-This project demonstrates an event‑driven architecture for an Order workflow using:
+# Order – Kafka Outbox Demo
 
-ASP.NET Core APIs
+This repository demonstrates an event-driven Order workflow using:
 
-SQL Server with the Outbox pattern
+- ASP.NET Core services
+- SQL Server with the Outbox pattern
+- MassTransit + Apache Kafka for messaging
+- A 3-broker Kafka cluster (`kafka1`, `kafka2`, `kafka3`)
+- AKHQ for Kafka UI and inspection
 
-MassTransit + Kafka for messaging
+## Architecture overview
 
-A 3‑broker Kafka cluster (brokers kafka1, kafka2, kafka3)
+### Order creation and Outbox pattern
 
-AKHQ for cluster/topic inspection
+1. A client sends a `POST /api/orders` request to the **Order API**.
+2. The Order service:
+   - Saves the new Order into **SQL Server**.
+   - In the same database transaction, inserts an **Outbox** row representing an `OrderCreated` event.
+3. The HTTP request completes only after both the Order and its Outbox event are committed.
 
-High-level flow
-Create Order (API)
+This ensures that the write to the database and the intent to publish an event cannot get out of sync.
 
-A client calls POST /api/orders on the Order API.
+### OrderJobs → Kafka
 
-The service creates a new Order in SQL Server and, in the same database transaction, inserts a corresponding outbox event row (e.g. OrderCreated) into an Outbox table.
+- The **OrderJobs** service is a background worker that:
+  - Periodically reads unprocessed records from the Outbox table in SQL Server.
+  - For each outbox record, publishes an `OrderCreated` message to Kafka on the topic `order-created-topic`.
+  - Marks the outbox record as processed after a successful publish.
 
-The HTTP response returns once the order and outbox entry are safely stored.
+This implements the Outbox pattern: it guarantees that every committed Order will eventually produce a corresponding Kafka event, even if the Kafka broker or the service is temporarily unavailable.
 
-OrderJobs Service (Outbox → Kafka)
+### PharmacyOrder consumer
 
-A background OrderJobs service periodically reads unprocessed outbox records from SQL Server.
+- The **PharmacyOrder** service subscribes to the `order-created-topic` Kafka topic.
+- When it receives an `OrderCreated` event, it:
+  - Creates or updates a pharmacy-side representation of the order.
+  - Can trigger additional workflows such as notifications, fulfillment, or further domain processing.
 
-For each outbox row, it publishes an OrderCreated message to Kafka (topic order-created-topic) and marks the outbox row as processed.
+This decouples the Order API from PharmacyOrder: they communicate only via Kafka messages.
 
-This implements the Outbox pattern, ensuring that:
+## Kafka cluster and docker-compose
 
-The order and the event are written atomically to the database.
+The repository includes a `docker-compose.yml` that starts:
 
-Message publishing to Kafka is retried safely without creating duplicate orders in the database.
+- `zookeeper`
+- `kafka1`, `kafka2`, `kafka3` – three Kafka brokers forming a cluster
+- `akhq` – a Kafka UI for inspecting brokers, topics, and messages
 
-PharmacyOrder Service (Kafka Consumer)
+High-level setup:
 
-The PharmacyOrder service subscribes to order-created-topic using Kafka.
+- Each broker has:
+  - A unique `KAFKA_BROKER_ID` (1, 2, 3).
+  - Internal listeners for broker-to-broker and AKHQ communication.
+  - External listeners mapped to localhost ports (e.g. `19092`, `19093`, `19094`) for local .NET apps.
+- The cluster is configured so internal Kafka topics (like `__consumer_offsets`) and the main business topic can use a **replication factor of 3** for fault tolerance.
 
-When it receives an OrderCreated event, it creates or updates the corresponding pharmacy order state (e.g. for fulfillment, notification, etc.).
+### Starting the cluster
 
-This decouples the Order API from PharmacyOrder: failures or downtime on PharmacyOrder do not affect order creation, and the events are replayed when it comes back.
-
-Kafka cluster
-The repository includes a 3‑broker Kafka cluster plus Zookeeper and AKHQ, all orchestrated via docker-compose.
-
-Brokers: kafka1, kafka2, kafka3
-
-Coordination: zookeeper
-
-UI: akhq on http://localhost:8090
-
-Key characteristics:
-
-Brokers are configured as a cluster, each with a unique broker ID and internal/external listeners.
-
-The order-created-topic is configured with:
-
-Multiple partitions for scalability and parallel consumption.
-
-Replication factor 3 so each partition is stored on all three brokers (1 leader + 2 followers).
+From the repository root:
 
