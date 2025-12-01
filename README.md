@@ -56,7 +56,12 @@ High-level setup:
 
 ### Starting the cluster
 
-From the repository root:
+From the repository root, To start the cluster:
+
+```bash
+docker compose up -d
+```
+
 Docker-compose.yml :
 ```text
 version: '3.8'
@@ -143,4 +148,25 @@ services:
 
 ```
 
+Then access AKHQ at:
+
+```text
+http://localhost:8090
+```
+### AKHQ
+AKHQ is used to:
+
+- Inspect brokers and verify all three nodes are part of the cluster.
+
+- Inspect topics:
+
+   -- Check partitions, leaders, and replicas for order-created-topic.
+
+   -- Confirm replication factor and in-sync replicas (ISR).
+
+- Inspect data:
+
+   -- Browse messages in order-created-topic.
+
+   -- Use Live Tail to watch OrderCreated events as they are produced by the OrderJobs service.
 
