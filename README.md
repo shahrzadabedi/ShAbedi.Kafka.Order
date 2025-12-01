@@ -170,3 +170,12 @@ AKHQ is used to:
 
    -- Use Live Tail to watch OrderCreated events as they are produced by the OrderJobs service.
 
+### AKHQ Nodes
+
+![AKHQ nodes view](docs/akhq-nodes.png)
+
+### Topic Partitions
+
+![AKHQ order-created-topic partitions](docs/akhq-partitions.png)
+
+
