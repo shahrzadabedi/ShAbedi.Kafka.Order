@@ -3,7 +3,7 @@
 This repository demonstrates an event-driven Order workflow using:
 
 - ASP.NET Core services
-- SQL Server with the Outbox pattern
+- Postgres with the Outbox pattern
 - MassTransit + Apache Kafka for messaging
 - A 3-broker Kafka cluster (`kafka1`, `kafka2`, `kafka3`)
 - AKHQ for Kafka UI and inspection
@@ -14,7 +14,7 @@ This repository demonstrates an event-driven Order workflow using:
 
 1. A client sends a `POST /api/orders` request to the **Order API**.
 2. The Order service:
-   - Saves the new Order into **SQL Server**.
+   - Saves the new Order into **Postgres**.
    - In the same database transaction, inserts an **Outbox** row representing an `OrderCreated` event.
 3. The HTTP request completes only after both the Order and its Outbox event are committed.
 
@@ -23,7 +23,7 @@ This ensures that the write to the database and the intent to publish an event c
 ### OrderJobs → Kafka
 
 - The **OrderJobs** service is a background worker that:
-  - Periodically reads unprocessed records from the Outbox table in SQL Server.
+  - Periodically reads unprocessed records from the Outbox table in Postgres.
   - For each outbox record, publishes an `OrderCreated` message to Kafka on the topic `order-created-topic`.
   - Marks the outbox record as processed after a successful publish.
 
@@ -177,5 +177,6 @@ AKHQ is used to:
 ### Topic Partitions
 
 ![AKHQ order-created-topic partitions](docs/akhq-partitions.png)
+
 
 
