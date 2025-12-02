@@ -12,7 +12,7 @@ namespace PharmacyOrder.Application.Consumers
         public async Task Consume(ConsumeContext<OrderCreated> context)
         {
             Console.WriteLine("Test");
-            //throw new NotImplementedException();
+
             await Task.Delay(1000);
         }
     }
