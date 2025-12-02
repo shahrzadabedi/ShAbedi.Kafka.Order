@@ -13,8 +13,8 @@ namespace ShAbedi.OrderJobs.Persistence
         {
             if (!optionsBuilder.IsConfigured)
             {
-                optionsBuilder.UseSqlServer(
-                    "Data Source=.;Initial Catalog=Order;User ID=sa;Password=123;Persist Security Info=True;TrustServerCertificate=True");
+                optionsBuilder.UseNpgsql(
+                    "Host=localhost;Database=Order;Username=postgres;Password=MyPass123");
             }
         }
 
@@ -30,6 +30,13 @@ namespace ShAbedi.OrderJobs.Persistence
             {
                 entity.ToTable("OrderItems");
                 entity.HasKey(l => l.Id);
+            });
+
+            modelBuilder.Entity<Order.Domain.Outbox>(entity =>
+            {
+                entity.ToTable("Outbox");
+                entity.HasKey(l => l.Id);
+                entity.HasIndex(p => p.OccurredOn);
             });
         }
 

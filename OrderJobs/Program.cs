@@ -1,5 +1,6 @@
 using Hangfire;
 using Hangfire.Common;
+using Hangfire.PostgreSql;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using OrderJobs.Application;
@@ -36,10 +37,10 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var cs = builder.Configuration.GetConnectionString("Default");
-builder.Services.AddDbContext<AppDbContext>(options => { options.UseSqlServer(cs); });
+builder.Services.AddDbContext<AppDbContext>(options => { options.UseNpgsql(cs); });
 
 var hangfireConnection = builder.Configuration.GetConnectionString("Hangfire");
-builder.Services.AddHangfire(x => x.UseSqlServerStorage(hangfireConnection));
+builder.Services.AddHangfire(x => x.UsePostgreSqlStorage(hangfireConnection));
 builder.Services.AddHangfireServer();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
@@ -61,6 +62,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseHangfireDashboard();
 
 app.UseAuthorization();
 

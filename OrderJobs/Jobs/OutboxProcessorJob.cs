@@ -38,11 +38,13 @@ namespace OrderJobs.Jobs
             int batchSize = 20;
 
             var messages = dbContext.Outbox
-                .FromSql($@"SELECT TOP ({batchSize}) Id, Type, Payload,IsProcessed, ProcessedOn, OccurredOn, RetryCount 
-                    FROM Outbox WITH (ROWLOCK, UPDLOCK, READPAST)
-                    WHERE IsProcessed = 0 
-                    ORDER BY OccurredOn")
-                            .ToList();
+                .FromSqlInterpolated($@"SELECT ""Id"", ""Type"", ""Payload"", ""IsProcessed"", ""ProcessedOn"", ""OccurredOn"", ""RetryCount"" 
+                    FROM ""Outbox""
+                    WHERE ""IsProcessed"" = false 
+                    ORDER BY ""OccurredOn""
+                    LIMIT {batchSize}
+                    FOR UPDATE SKIP LOCKED")
+                .ToList();
 
             foreach (var message in messages)
             {
