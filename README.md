@@ -38,6 +38,20 @@ This implements the Outbox pattern: it guarantees that every committed Order wil
 
 This decouples the Order API from PharmacyOrder: they communicate only via Kafka messages.
 
+### PharmacyOrder and Notification consumers (multiple consumer groups)
+
+There are two independent downstream services consuming the same `OrderCreated` events from the `order-created-topic`:
+
+- **PharmacyOrder** service  
+  - Subscribes to `order-created-topic` with its own Kafka consumer group (for example, `pharmacy-order-group`).  
+  - Handles pharmacy-specific processing for each new order.
+
+- **Notification** service  
+  - Subscribes to the same `order-created-topic`, but uses a different consumer group (`notification-group`).  
+  - Sends notifications (for example, to users or other systems) whenever a new order is created.
+
+Because they use **different consumer groups**, both services receive every `OrderCreated` message independently and can apply their own processing. This demonstrates a common Kafka pattern: the same event stream can fan out to multiple services, each with its own consumer group and its own offset tracking, without affecting the others.
+
 ## Kafka cluster and docker-compose
 
 The repository includes a `docker-compose.yml` that starts:
@@ -177,6 +191,7 @@ AKHQ is used to:
 ### Topic Partitions
 
 ![AKHQ order-created-topic partitions](docs/akhq-partitions.png)
+
 
 
 
