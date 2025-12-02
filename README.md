@@ -29,6 +29,10 @@ This ensures that the write to the database and the intent to publish an event c
 
 This implements the Outbox pattern: it guarantees that every committed Order will eventually produce a corresponding Kafka event, even if the Kafka broker or the service is temporarily unavailable.
 
+#### Outbox polling query (Postgres and SKIP LOCKED)
+
+The OrderJobs service reads pending outbox records from Postgres using a `SELECT ... FOR UPDATE SKIP LOCKED` query. This pattern allows multiple instances of OrderJobs (for example, multiple pods) to run in parallel and safely share the same Outbox table: each instance locks and processes its own batch of rows, while `SKIP LOCKED` tells Postgres to skip rows that are already locked by another instance instead of waiting on them. As a result, no two workers process the same outbox record, and the system can scale horizontally without introducing contention on the Outbox table.
+
 ### PharmacyOrder consumer
 
 - The **PharmacyOrder** service subscribes to the `order-created-topic` Kafka topic.
@@ -191,6 +195,7 @@ AKHQ is used to:
 ### Topic Partitions
 
 ![AKHQ order-created-topic partitions](docs/akhq-partitions.png)
+
 
 
 
