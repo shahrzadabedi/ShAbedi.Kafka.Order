@@ -1,6 +1,9 @@
 using MassTransit;
+using Microsoft.EntityFrameworkCore;
 using OrderJobs.Application.DTOs;
+using PharmacyOrder.Application;
 using PharmacyOrder.Application.Consumers;
+using PharmacyOrder.Infrastructure.Persistence;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -45,6 +48,10 @@ builder.Services.AddMassTransit(x =>
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+var cs = builder.Configuration.GetConnectionString("Default");
+builder.Services.AddDbContext<AppDbContext>(options => { options.UseNpgsql(cs); });
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 var app = builder.Build();
 
